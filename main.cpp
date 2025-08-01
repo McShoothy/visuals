@@ -499,10 +499,6 @@ int main() {
 
         cv::imshow("Live Feed with Beat-Synced Effects", frame);
 
-        // Set window to fullscreen
-        cv::namedWindow("Live Feed with Beat-Synced Effects", cv::WINDOW_NORMAL);
-        cv::setWindowProperty("Live Feed with Beat-Synced Effects", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
-
         int key = cv::waitKey(1) & 0xFF;
         if (key == 27) break; // ESC key
         handleKeyboardInput(key);
