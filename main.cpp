@@ -29,6 +29,10 @@ int edge_box_amount = 130;
 int edge_box_life = 1;
 bool is_fullscreen = false;
 
+// QR code image
+cv::Mat qr_code;
+bool qr_loaded = false;
+
 std::string random_label(std::mt19937& gen) {
     std::uniform_real_distribution<> r(0, 1);
     double rand_val = r(gen);
@@ -201,6 +205,17 @@ int main() {
     if (!cap.isOpened()) {
         std::cerr << "Cannot open camera\n";
         return -1;
+    }
+
+    // Load QR code image
+    qr_code = cv::imread("../images/qr.png", cv::IMREAD_UNCHANGED);
+    if (!qr_code.empty()) {
+        qr_loaded = true;
+        // Resize QR code to reasonable size (e.g., 150x150 pixels)
+        cv::resize(qr_code, qr_code, cv::Size(150, 150));
+        std::cout << "QR code loaded successfully" << std::endl;
+    } else {
+        std::cout << "Warning: Could not load QR code from images/qr.png" << std::endl;
     }
 
     cv::Ptr<cv::ORB> orb = cv::ORB::create(1500, 1.2f, 8, 31, 0, 2, cv::ORB::HARRIS_SCORE, 31, 20);
@@ -507,6 +522,40 @@ int main() {
         cv::rectangle(frame, cv::Point(0, 0), cv::Point(frame.cols, banner_height), cv::Scalar(0, 0, 0), -1);
         cv::putText(frame, "https://ROBOTUPRISING.FI  - github.com/robot-uprising-hq", cv::Point(20, 35),
                    cv::FONT_HERSHEY_SIMPLEX, 1.2, cv::Scalar(255, 255, 255), 2, cv::LINE_AA);
+
+        // Overlay QR code in lower right corner
+        if (qr_loaded && !qr_code.empty()) {
+            int qr_margin = 20;
+            int qr_x = frame.cols - qr_code.cols - qr_margin;
+            int qr_y = frame.rows - qr_code.rows - qr_margin;
+
+            // Ensure QR code fits within frame boundaries
+            if (qr_x >= 0 && qr_y >= 0) {
+                cv::Rect roi(qr_x, qr_y, qr_code.cols, qr_code.rows);
+
+                if (qr_code.channels() == 4) {
+                    // Handle PNG with alpha channel
+                    cv::Mat qr_bgr, qr_alpha;
+                    std::vector<cv::Mat> qr_channels;
+                    cv::split(qr_code, qr_channels);
+                    cv::merge(std::vector<cv::Mat>{qr_channels[0], qr_channels[1], qr_channels[2]}, qr_bgr);
+                    qr_alpha = qr_channels[3];
+
+                    // Apply alpha blending
+                    cv::Mat frame_roi = frame(roi);
+                    for (int y = 0; y < qr_bgr.rows; ++y) {
+                        for (int x = 0; x < qr_bgr.cols; ++x) {
+                            float alpha = qr_alpha.at<uchar>(y, x) / 255.0f;
+                            frame_roi.at<cv::Vec3b>(y, x) = alpha * qr_bgr.at<cv::Vec3b>(y, x) +
+                                                           (1.0f - alpha) * frame_roi.at<cv::Vec3b>(y, x);
+                        }
+                    }
+                } else {
+                    // Simple copy for images without alpha channel
+                    qr_code.copyTo(frame(roi));
+                }
+            }
+        }
 
         cv::imshow("Live Feed with Beat-Synced Effects", frame);
 
