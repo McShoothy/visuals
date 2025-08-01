@@ -27,6 +27,7 @@ struct EdgePoint {
 bool show_edge_boxes = false;
 int edge_box_amount = 130;
 int edge_box_life = 1;
+bool is_fullscreen = false;
 
 std::string random_label(std::mt19937& gen) {
     std::uniform_real_distribution<> r(0, 1);
@@ -170,6 +171,16 @@ void handleKeyboardInput(int key) {
             show_edge_boxes = !show_edge_boxes;
             std::cout << "Edge boxes: " << (show_edge_boxes ? "ON" : "OFF") << std::endl;
             break;
+        case 'q':
+        case 'Q':
+            is_fullscreen = !is_fullscreen;
+            if (is_fullscreen) {
+                cv::setWindowProperty("Live Feed with Beat-Synced Effects", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
+            } else {
+                cv::setWindowProperty("Live Feed with Beat-Synced Effects", cv::WND_PROP_FULLSCREEN, cv::WINDOW_NORMAL);
+            }
+            std::cout << "Fullscreen: " << (is_fullscreen ? "ON" : "OFF") << std::endl;
+            break;
         case 'g':
         case 'G':
             edge_box_amount = std::min(600, edge_box_amount + 10);
@@ -217,7 +228,7 @@ int main() {
     // Bright/dark spot detection parameters
     int bright_dark_check_interval = 30; // Check every 30 frames
 
-    std::cout << "Controls: F - Toggle edge boxes, G/H - Increase/Decrease edge box amount" << std::endl;
+    std::cout << "Controls: F - Toggle edge boxes, Q - Toggle fullscreen, G/H - Increase/Decrease edge box amount" << std::endl;
 
     while (true) {
         cv::Mat frame;
